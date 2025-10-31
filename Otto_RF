@@ -1,1 +1,137 @@
+#include <Servo.h>
 
+Servo RSlave;
+Servo LSlave;
+
+int R_transition = 25;
+int L_transition = 30;
+int transitionMax = (R_transition > L_transition ? R_transition : L_transition);
+int R_Pause = 95;
+int L_Pause = 96;
+int valorBotoes = 0;
+char estado = 'P';
+bool estadoBotoes[4] = {0,0,0,0}; //Tras, Esquerda, Direita, Frente
+int pinosControle[4] = {2, 3, 5, 6}; //Tras, Esquerda, Direita, Frente
+
+void lerBotoes(int* pinosControle, bool* estadoBotoes, int* valorBotoes);
+void parar();
+void frente();
+void tras();
+void direita();
+void esquerda();
+
+void setup() {
+  for(int i=0; i < 4; i++){
+    pinMode(pinosControle[i], INPUT);
+  }
+  RSlave.attach(4);
+  LSlave.attach(8);
+}
+
+void loop() {
+  lerBotoes(pinosControle, estadoBotoes, &valorBotoes);
+
+  switch(valorBotoes){
+    case 0b0000:
+      parar();
+      break;
+    case 0b0001:
+      frente();
+      break;
+    case 0b0010:
+      direita();
+      break;
+    case 0b0100:
+      esquerda();
+      break;
+    case 0b1000:
+      tras();
+      break;
+    default:
+      break;
+  }
+}
+
+
+
+
+
+void lerBotoes(int* pinosControle, bool* estadoBotoes, int* valorBotoes){
+  for(int i = 0; i < 4; i++){
+    estadoBotoes[i] = digitalRead(pinosControle[i]);
+  }
+  *valorBotoes = estadoBotoes[0]*8 + estadoBotoes[1]*4 + estadoBotoes[2]*2 + estadoBotoes[3]*1;
+}
+
+void parar(){
+  for(int i = 1; i <= transitionMax; i++){
+    RSlave.write(R_Pause);
+    LSlave.write(L_Pause);
+  }
+  estado = 'P';
+}
+
+void frente(){
+  if(estado == 'P'){
+    estado = 'F';
+    for(int i = 1; i <= transitionMax; i++){
+      lerBotoes(pinosControle, estadoBotoes, &valorBotoes);
+      if(valorBotoes != 0b0000){
+        RSlave.write(R_Pause - i);
+        LSlave.write(L_Pause + i);
+        delay(30);
+      }else{
+        break;
+      }
+      
+    }
+  }
+}
+
+void tras(){
+  if(estado == 'P'){
+    estado = 'T';
+    for(int i = 1; i <= transitionMax; i++){
+      lerBotoes(pinosControle, estadoBotoes, &valorBotoes);
+      if(valorBotoes != 0b0000){
+      RSlave.write(R_Pause + i);
+      LSlave.write(L_Pause - i);
+      delay(30);
+      }else{
+        break;
+      }
+    } 
+  }
+}
+
+void direita(){
+  if(estado == 'P'){
+    estado = 'D';
+    for(int i = 1; i <= transitionMax; i++){
+      lerBotoes(pinosControle, estadoBotoes, &valorBotoes);
+      if(valorBotoes != 0b0000){
+      RSlave.write(R_Pause + i);
+      LSlave.write(L_Pause + i);
+      delay(30);
+      }else{
+        break;
+      }
+    }
+  }
+}
+
+void esquerda(){
+  if(estado == 'P'){
+    estado = 'E';
+    for(int i = 1; i <= transitionMax; i++){
+      lerBotoes(pinosControle, estadoBotoes, &valorBotoes);
+      if(valorBotoes != 0b0000){
+      RSlave.write(R_Pause - i);
+      LSlave.write(L_Pause - i);
+      delay(30);
+      }else{
+        break;
+      }
+    }
+  }
+}
